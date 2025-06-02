@@ -1,2 +1,5 @@
-[mounts]
-path = "/data"
+[build]
+builder = "docker"
+
+[deploy]
+startCommand = "sleep infinity"
