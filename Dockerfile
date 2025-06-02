@@ -1,7 +1,7 @@
-FROM python:3.10-slim
+FROM debian:bullseye-slim
 
-WORKDIR /data
+# Create the mount path explicitly
+RUN mkdir -p /data && apt-get update && apt-get install -y curl nano
 
-EXPOSE 80
-
-CMD ["python3", "-m", "http.server", "80", "--bind", "0.0.0.0"]
+# Keep container alive
+CMD ["sleep", "infinity"]
