@@ -4,13 +4,14 @@ import os
 import json
 import stat
 import sys
+import time
 
 PORT = 8080
 MOUNT_POINT = "/data"
 
 def attempt_chmod(path, mode):
     try:
-        print(f"Attempting to chmod {path} to {oct(mode)}", file=sys.stdout, flush=True)
+        print(f"Attempting chmod {path} to {oct(mode)}...", file=sys.stdout, flush=True)
         os.chmod(path, mode)
         print(f"Successfully chmodded {path} to {oct(mode)}", file=sys.stdout, flush=True)
     except OSError as e:
@@ -23,6 +24,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             self.send_header('Content-type', 'text/html')
             self.end_headers()
             attempt_chmod(MOUNT_POINT, 0o777)
+            time.sleep(1) # Add a small delay
             list = os.listdir(MOUNT_POINT)
             list_html = "<ul>" + "".join(f"<li>{item}</li>" for item in list) + "</ul>"
             output = f"""
