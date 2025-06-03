@@ -1,2 +1,2 @@
-[deploy]
-startCommand = "sleep infinity"
+# [deploy]
+# startCommand = "sleep infinity"
