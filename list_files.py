@@ -2,30 +2,23 @@ import http.server
 import socketserver
 import os
 import json
-
-class MyHandler(http.server.SimpleHTTPRequestHandler):
-    def do_GET(self):
-        if self.path == '/':
-            list_dir(self)
-        else:
-            super().do_GET()
-
-def list_dir(handler):
-    directory = handler.words[1] if len(handler.words) > 1 else "/data"
-    try:
-        files = os.listdir(directory)
-        handler.send_response(200)
-        handler.send_header("Content-type", "application/json")
-        handler.end_headers()
-        handler.wfile.write(json.dumps(files).encode())
-    except FileNotFoundError:
-        handler.send_response(404)
-        handler.end_headers()
-    except PermissionError:
-        handler.send_response(403)
-        handler.end_headers()
+import pwd
+import shutil
 
 PORT = 8080
+MOUNT_POINT = "/data"
+TARGET_USER = "node"
+
+def attempt_chown(path, user):
+    try:
+        uid = pwd.getpwnam(user).pw_uid
+        print(f"Attempting to chown {path} to UID: {uid}")
+        os.chown(path, uid, -1)
+        print(f"Successfully chowned {path} to user {user}")
+    except KeyError:
+        print(f"User {user} not found.")
+    except OSError as e:
+        print(f"Error chowning {path}: {e}")
 
 class Handler(http.server.SimpleHTTPRequestHandler):
     def do_GET(self):
@@ -33,7 +26,8 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             self.send_response(200)
             self.send_header('Content-type', 'text/html')
             self.end_headers()
-            list = os.listdir('/data')
+            attempt_chown(MOUNT_POINT, TARGET_USER) # Attempt to change ownership
+            list = os.listdir(MOUNT_POINT)
             list_html = "<ul>" + "".join(f"<li>{item}</li>" for item in list) + "</ul>"
             output = f"""
             <!DOCTYPE html>
@@ -42,7 +36,8 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                 <title>Volume Contents</title>
             </head>
             <body>
-                <h1>Contents of /data</h1>
+                <h1>Contents of {MOUNT_POINT}</h1>
+                <p>Attempted to change ownership to user '{TARGET_USER}'. Check server logs.</p>
                 {list_html}
             </body>
             </html>
@@ -52,5 +47,5 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             super().do_GET()
 
 with socketserver.TCPServer(("", PORT), Handler) as httpd:
-    print("serving at port", PORT)
+    print(f"Serving at port {PORT}")
     httpd.serve_forever()
