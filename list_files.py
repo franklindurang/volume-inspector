@@ -3,17 +3,18 @@ import socketserver
 import os
 import json
 import stat
+import sys
 
 PORT = 8080
 MOUNT_POINT = "/data"
 
 def attempt_chmod(path, mode):
     try:
-        print(f"Attempting to chmod {path} to {oct(mode)}")
+        print(f"Attempting to chmod {path} to {oct(mode)}", file=sys.stdout, flush=True)
         os.chmod(path, mode)
-        print(f"Successfully chmodded {path} to {oct(mode)}")
+        print(f"Successfully chmodded {path} to {oct(mode)}", file=sys.stdout, flush=True)
     except OSError as e:
-        print(f"Error chmodding {path}: {e}")
+        print(f"Error chmodding {path}: {e}", file=sys.stderr, flush=True)
 
 class Handler(http.server.SimpleHTTPRequestHandler):
     def do_GET(self):
@@ -21,7 +22,6 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             self.send_response(200)
             self.send_header('Content-type', 'text/html')
             self.end_headers()
-            # Give read/write/execute to all (0o777)
             attempt_chmod(MOUNT_POINT, 0o777)
             list = os.listdir(MOUNT_POINT)
             list_html = "<ul>" + "".join(f"<li>{item}</li>" for item in list) + "</ul>"
@@ -43,5 +43,5 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             super().do_GET()
 
 with socketserver.TCPServer(("", PORT), Handler) as httpd:
-    print(f"Serving at port {PORT}")
+    print(f"Serving at port {PORT}", file=sys.stdout, flush=True)
     httpd.serve_forever()
