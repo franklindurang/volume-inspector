@@ -2,23 +2,18 @@ import http.server
 import socketserver
 import os
 import json
-import pwd
-import shutil
+import stat
 
 PORT = 8080
 MOUNT_POINT = "/data"
-TARGET_USER = "node"
 
-def attempt_chown(path, user):
+def attempt_chmod(path, mode):
     try:
-        uid = pwd.getpwnam(user).pw_uid
-        print(f"Attempting to chown {path} to UID: {uid}")
-        os.chown(path, uid, -1)
-        print(f"Successfully chowned {path} to user {user}")
-    except KeyError:
-        print(f"User {user} not found.")
+        print(f"Attempting to chmod {path} to {oct(mode)}")
+        os.chmod(path, mode)
+        print(f"Successfully chmodded {path} to {oct(mode)}")
     except OSError as e:
-        print(f"Error chowning {path}: {e}")
+        print(f"Error chmodding {path}: {e}")
 
 class Handler(http.server.SimpleHTTPRequestHandler):
     def do_GET(self):
@@ -26,7 +21,8 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             self.send_response(200)
             self.send_header('Content-type', 'text/html')
             self.end_headers()
-            attempt_chown(MOUNT_POINT, TARGET_USER) # Attempt to change ownership
+            # Give read/write/execute to all (0o777)
+            attempt_chmod(MOUNT_POINT, 0o777)
             list = os.listdir(MOUNT_POINT)
             list_html = "<ul>" + "".join(f"<li>{item}</li>" for item in list) + "</ul>"
             output = f"""
@@ -37,7 +33,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             </head>
             <body>
                 <h1>Contents of {MOUNT_POINT}</h1>
-                <p>Attempted to change ownership to user '{TARGET_USER}'. Check server logs.</p>
+                <p>Attempted to chmod '{MOUNT_POINT}' to 0777. Check server logs.</p>
                 {list_html}
             </body>
             </html>
